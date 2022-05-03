@@ -17,7 +17,8 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "URL_titles": hemisphere_scrape(browser)
     }
     # Stop webdriver and return data
     browser.quit()
@@ -116,5 +117,45 @@ def mars_facts():
     df.set_index('Description', inplace=True)
 
     # Convert dataframe into HTML format, add bootstrap
-    return df.to_html()
+    return df.to_html(classes ='table table-striped' , border=0)
 # browser.quit()
+
+def hemisphere_scrape(browser):
+
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
+
+    # 2. Create a list to hold the images and titles.
+    hemisphere_image_urls = []
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    #initializing soup
+    html = browser.html
+    url_soup = soup(html, 'html.parser')
+    #getting all div with description class
+    all_page_URLs = url_soup.find_all('div',class_='description')
+    title=[]
+
+    #looping through all findigs
+    for prod in all_page_URLs:
+        #finding the desired links
+        hyperlink = prod.find('a',class_='itemLink product-item')['href']
+        #getting the title and removing \n
+        title= (prod.find('a',class_='itemLink product-item').text.replace('\n',''))
+        
+        #creating the absolute URL
+        full_URL = url + hyperlink
+        
+        #going to the new page and setting up Soup again
+        browser.visit(full_URL)
+        html = browser.html
+        page2_soup = soup(html, 'html.parser')
+        
+        #looping though links to find the desired links
+        for link in page2_soup.find_all('a',target='_blank'):
+            # added this to avoid reading the links twice. 'Sample' is unique on the page.
+            if link.text == 'Sample':
+                img_url=(url+  link.get('href'))
+        #updating the dictionary        
+        hemisphere_image_urls.append({'img_url':img_url,'title':title})
+    return hemisphere_image_urls
